@@ -91,7 +91,7 @@ zip \
 
 RUN apt-get update && \
 DEBIAN_FRONTEND=noninteractive apt-get install -y -q \
-python3-pip ninja-build
+python3-pip ninja-build rsync
 RUN pip3 install meson
 RUN apt-get install -y -q doxygen
 RUN apt-get install -y -q graphviz
