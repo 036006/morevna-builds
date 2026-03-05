@@ -56,12 +56,19 @@ else
 fi
 
 
+# Mount local source directory if specified
+SOURCE_MOUNT_FLAGS=""
+if [ -n "$SYNFIG_SOURCE_DIR" ]; then
+    SOURCE_MOUNT_FLAGS="-v $SYNFIG_SOURCE_DIR:/source/synfig:ro --env SYNFIG_SOURCE_DIR=/source/synfig"
+fi
+
 # FUSE required for AppImage
 docker run --rm \
     $INTERACTIVE_FLAGS \
     --device /dev/fuse --cap-add SYS_ADMIN --security-opt apparmor:unconfined \
     -v $(pwd):/workdir \
     -v "$BUILD_DIR:/build" \
+    $SOURCE_MOUNT_FLAGS \
     --env PLATFORM="$PLATFORM" \
     --env ARCH="$ARCH" \
     --env NATIVE_PLATFORM="$NATIVE_PLATFORM" \

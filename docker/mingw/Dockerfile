@@ -92,6 +92,7 @@ libegl1-mesa-dev \
 # native-gtk -> native-atspi2
 libxtst-dev \
 libdbus-1-dev \
+rsync \
 # qt deps see: http://doc.qt.io/qt-5/linux-requirements.html \
 #libxrender-dev \
 #libfontconfig1-dev \
