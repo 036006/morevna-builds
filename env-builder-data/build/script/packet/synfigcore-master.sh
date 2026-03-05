@@ -75,7 +75,11 @@ PK_GIT_CHECKOUT="origin/testing"
 PK_LICENSE_FILES="synfig-core/AUTHORS synfig-core/README"
 PK_CPPFLAGS="-DWINVER=0x0600" # required for `GetUserDefaultLocaleName` function
 
-source $INCLUDE_SCRIPT_DIR/inc-pkall-git.sh
+if [ -n "$SYNFIG_SOURCE_DIR" ]; then
+    source $INCLUDE_SCRIPT_DIR/inc-pkall-local.sh
+else
+    source $INCLUDE_SCRIPT_DIR/inc-pkall-git.sh
+fi
 
 pkbuild() {
     cd "$BUILD_PACKET_DIR/$PK_DIRNAME/synfig-core" || return 1

@@ -94,7 +94,7 @@ libssl1.0.2 openssl libgnutls30 \
 
 RUN apt-get update && \
 DEBIAN_FRONTEND=noninteractive apt-get install -y -q \
-python3-pip ninja-build
+python3-pip ninja-build rsync
 RUN pip3 install meson
 
 CMD ["/bin/bash"]

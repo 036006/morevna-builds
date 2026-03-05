@@ -34,7 +34,11 @@ PK_CPPFLAGS="-std=c++11"
 # put COPYING to front for license agreement page of NSIS installer
 PK_LICENSE_FILES="synfig-studio/COPYING synfig-studio/README synfig-studio/AUTHORS"
 
-source $INCLUDE_SCRIPT_DIR/inc-pkall-git.sh
+if [ -n "$SYNFIG_SOURCE_DIR" ]; then
+    source $INCLUDE_SCRIPT_DIR/inc-pkall-local.sh
+else
+    source $INCLUDE_SCRIPT_DIR/inc-pkall-git.sh
+fi
 
 pkhook_version() {
     cat "$PK_DIRNAME/synfig-studio/configure.ac" \

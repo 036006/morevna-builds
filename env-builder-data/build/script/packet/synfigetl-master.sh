@@ -6,7 +6,11 @@ PK_URL="https://github.com/synfig/$PK_DIRNAME.git"
 PK_GIT_CHECKOUT="origin/testing"
 PK_LICENSE_FILES="ETL/AUTHORS ETL/README"
 
-source $INCLUDE_SCRIPT_DIR/inc-pkall-git.sh
+if [ -n "$SYNFIG_SOURCE_DIR" ]; then
+    source $INCLUDE_SCRIPT_DIR/inc-pkall-local.sh
+else
+    source $INCLUDE_SCRIPT_DIR/inc-pkall-git.sh
+fi
 
 pkbuild() {
     cd "$BUILD_PACKET_DIR/$PK_DIRNAME/ETL" || return 1

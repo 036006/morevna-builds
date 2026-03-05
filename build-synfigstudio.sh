@@ -17,6 +17,39 @@ if [ -f $CONFIG_FILE ]; then
     source $CONFIG_FILE
 fi
 
+# Parse --source-dir argument
+SYNFIG_SOURCE_DIR=""
+ARGS=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --source-dir)
+            if [ -z "$2" ] || [[ "$2" == --* ]]; then
+                echo "Error: --source-dir requires a path argument" >&2
+                exit 1
+            fi
+            SYNFIG_SOURCE_DIR="$(realpath "$2")"
+            if [ ! -d "$SYNFIG_SOURCE_DIR" ]; then
+                echo "Error: source directory does not exist: $SYNFIG_SOURCE_DIR" >&2
+                exit 1
+            fi
+            for subdir in ETL synfig-core synfig-studio; do
+                if [ ! -d "$SYNFIG_SOURCE_DIR/$subdir" ]; then
+                    echo "Error: source directory missing '$subdir' subdirectory: $SYNFIG_SOURCE_DIR" >&2
+                    exit 1
+                fi
+            done
+            export SYNFIG_SOURCE_DIR
+            echo "Using local source directory: $SYNFIG_SOURCE_DIR"
+            shift 2
+            ;;
+        *)
+            ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+set -- "${ARGS[@]}"
+
 SCRIPT="$BASE_DIR/run.sh"
 
 run_appimage() {
