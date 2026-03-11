@@ -4,7 +4,8 @@
 
 pkdownload() {
     local TARGET="$DOWNLOAD_PACKET_DIR/$PK_DIRNAME"
-    echo "Copying local source from $SYNFIG_SOURCE_DIR to $TARGET"
-    mkdir -p "$TARGET" || return 1
-    rsync -a --delete --exclude='.git' "$SYNFIG_SOURCE_DIR/" "$TARGET/" || return 1
+    echo "Linking local source $SYNFIG_SOURCE_DIR -> $TARGET"
+    # Use a symlink so sha512dir can use the fast .git-based hash
+    rm -rf "$TARGET" 2>/dev/null || true
+    ln -sf "$SYNFIG_SOURCE_DIR" "$TARGET" || return 1
 }
