@@ -4,12 +4,12 @@
 # SYNFIG_SOURCE_DIR
 
 pkunpack() {
-    # Copy from symlinked source to unpack dir (following symlinks, excluding .git)
-    local SRC="$DOWNLOAD_PACKET_DIR/$PK_DIRNAME"
+    # Copy directly from the local source directory, excluding .git
     local DEST="$UNPACK_PACKET_DIR/$PK_DIRNAME"
     rm -rf "$DEST" 2>/dev/null || true
     mkdir -p "$DEST" || return 1
-    rsync -a --delete --exclude='.git' "$SRC/" "$DEST/" || return 1
+    echo "Copying source from $SYNFIG_SOURCE_DIR to $DEST"
+    rsync -a --delete --exclude='.git' "$SYNFIG_SOURCE_DIR/" "$DEST/" || return 1
 
     if [ -z "$PK_VERSION" ]; then
         PK_VERSION="$(pkhook_version)"
