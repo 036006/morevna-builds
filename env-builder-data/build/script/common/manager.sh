@@ -40,6 +40,13 @@ if [ -z "$THREADS" ]; then
     THREADS=8
 fi
 
+# Enable ccache if available
+if command -v ccache >/dev/null 2>&1 && [ -n "$CCACHE_DIR" ]; then
+    export PATH="/usr/lib/ccache:$PATH"
+    export CCACHE_MAXSIZE="${CCACHE_MAXSIZE:-5G}"
+    echo "ccache enabled (dir=$CCACHE_DIR, max=$CCACHE_MAXSIZE)"
+fi
+
 export NATIVE_PLATFORM
 export NATIVE_ARCH
 export PLATFORM

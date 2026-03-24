@@ -62,16 +62,23 @@ if [ -n "$SYNFIG_SOURCE_DIR" ]; then
     SOURCE_MOUNT_FLAGS="-v $SYNFIG_SOURCE_DIR:/source/synfig:ro --env SYNFIG_SOURCE_DIR=/source/synfig"
 fi
 
+# Persistent ccache directory
+CCACHE_HOST_DIR="${CCACHE_DIR:-$HOME/.ccache-morevna}"
+mkdir -p "$CCACHE_HOST_DIR"
+
 # FUSE required for AppImage
 docker run --rm \
     $INTERACTIVE_FLAGS \
     --device /dev/fuse --cap-add SYS_ADMIN --security-opt apparmor:unconfined \
     -v $(pwd):/workdir \
     -v "$BUILD_DIR:/build" \
+    -v "$CCACHE_HOST_DIR:/ccache" \
     $SOURCE_MOUNT_FLAGS \
     --env PLATFORM="$PLATFORM" \
     --env ARCH="$ARCH" \
     --env NATIVE_PLATFORM="$NATIVE_PLATFORM" \
     --env NATIVE_ARCH="$NATIVE_ARCH" \
+    --env THREADS="${THREADS:-}" \
+    --env CCACHE_DIR="/ccache" \
     ${DOCKER_IMAGE} \
     ${SETARCH} /build/script/common/manager.sh "$@"
