@@ -19,6 +19,7 @@ pkunpack() {
     # Get commit hash from local source .git if available
     local COMMIT="local"
     if [ -d "$SYNFIG_SOURCE_DIR/.git" ]; then
+        git config --global --add safe.directory "$SYNFIG_SOURCE_DIR" 2>/dev/null || true
         COMMIT=$(cd "$SYNFIG_SOURCE_DIR" && git rev-parse HEAD 2>/dev/null) || COMMIT="local"
     fi
     echo "$PK_VERSION-$COMMIT" > "$UNPACK_PACKET_DIR/version-$NAME"
