@@ -11,6 +11,7 @@ pkdownload() {
     local STATE_FILE="$DOWNLOAD_PACKET_DIR/source-state"
     echo "Capturing source state from $SYNFIG_SOURCE_DIR"
     if [ -d "$SYNFIG_SOURCE_DIR/.git" ]; then
+        git config --global --add safe.directory "$SYNFIG_SOURCE_DIR" 2>/dev/null || true
         (cd "$SYNFIG_SOURCE_DIR" && git rev-parse HEAD && git status -s && git diff) \
             > "$STATE_FILE" || return 1
     else
