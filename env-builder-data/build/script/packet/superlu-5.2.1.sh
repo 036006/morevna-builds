@@ -1,8 +1,8 @@
 DEPS="blas-3.7.0"
 
-PK_DIRNAME="SuperLU_5.2.1"
-PK_ARCHIVE="superlu_5.2.1.tar.gz"
-PK_URL="http://crd-legacy.lbl.gov/~xiaoye/SuperLU/$PK_ARCHIVE"
+PK_DIRNAME="superlu-5.2.1"
+PK_ARCHIVE="v5.2.1.tar.gz"
+PK_URL="https://github.com/xiaoyeli/superlu/archive/$PK_ARCHIVE"
 
 source $INCLUDE_SCRIPT_DIR/inc-pkall-default.sh
 
