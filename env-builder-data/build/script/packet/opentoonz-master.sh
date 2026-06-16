@@ -31,6 +31,12 @@ pkbuild() {
     fi
     if [ "$PLATFORM" = "win" ]; then
         LOCAL_CMAKE_OPTIONS="$LOCAL_CMAKE_OPTIONS -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_C_COMPILER=${HOST}-gcc -DCMAKE_CXX_COMPILER=${HOST}-g++"
+        # When cross-compiling for Windows, CMake's UNIX variable is false, so
+        # FindPkgConfig builds PKG_CONFIG_PATH from CMAKE_PREFIX_PATH using ';'
+        # separators and skips the ';'->':' conversion. pkg-config then sees a
+        # single invalid path and pkg_check_modules (liblzma, liblz4) fails.
+        # Disable that rewrite so the already-correct env PKG_CONFIG_PATH is used.
+        LOCAL_CMAKE_OPTIONS="$LOCAL_CMAKE_OPTIONS -DPKG_CONFIG_USE_CMAKE_PREFIX_PATH=FALSE"
         LOCAL_PNG_LIB="libpng16.dll.a"
         LOCAL_GLUT_LIB="libfreeglut.dll.a"
     fi
