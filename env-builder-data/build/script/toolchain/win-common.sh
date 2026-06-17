@@ -33,7 +33,11 @@ unset TC_EXTRA_CPP_OPTIONS
 export TC_PKG_CONFIG_PATH=""
 #export TC_PKG_CONFIG_LIBDIR="$CROSS_ROOT/lib"
 #export TC_CMAKE_INCLUDE_PATH="${CROSS_ROOT}/include:$INITIAL_CMAKE_INCLUDE_PATH"
-#export TC_CMAKE_LIBRARY_PATH="${CROSS_ROOT}/lib:$INITIAL_CMAKE_LIBRARY_PATH"
+# Add the mingw sysroot lib dir to CMAKE_LIBRARY_PATH so find_library() can
+# locate the toolchain libraries (opengl32 -> GL_LIB, glu32 -> GLU_LIB,
+# pthread -> PTHREAD_LIBRARY) used by OpenToonz. Without this they resolve to
+# NOTFOUND and cmake configure fails.
+export TC_CMAKE_LIBRARY_PATH="${CROSS_ROOT}/lib:$INITIAL_CMAKE_LIBRARY_PATH"
 
 #export TC_ACLOCAL_PATH="/usr/share/aclocal"
 #if [ ! -z "$INITIAL_ACLOCAL_PATH" ]; then
