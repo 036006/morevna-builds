@@ -39,6 +39,17 @@ pkbuild() {
         LOCAL_CMAKE_OPTIONS="$LOCAL_CMAKE_OPTIONS -DPKG_CONFIG_USE_CMAKE_PREFIX_PATH=FALSE"
         LOCAL_PNG_LIB="libpng16.dll.a"
         LOCAL_GLUT_LIB="libfreeglut.dll.a"
+
+        # On win64 the SSE2 path is enabled (USE_SSE2 = _WIN32 && x64). Inside
+        # the template rop_resample_rgbm_2<T> the line "TRaster32P rout32 = rout;"
+        # fails to compile when instantiated with T=TPixelRGBM64, because
+        # converting TRasterPT<TPixelRGBM64> to TRaster32P (TRasterPT<TPixelRGBM32>)
+        # would need two user-defined conversions. Route it through the generic
+        # TRasterP so it compiles for both instantiations (and yields a null
+        # raster for the 64-bit case, correctly skipping the 32-bit SSE2 path).
+        # Idempotent: the exact "= rout;" pattern no longer matches once patched.
+        sed -i 's/TRaster32P rout32 = rout;/TRaster32P rout32 = (TRasterP)rout;/' \
+            "$BUILD_PACKET_DIR/$PK_DIRNAME/toonz/sources/common/trop/tresample.cpp" || return 1
     fi
 
     cd "$BUILD_PACKET_DIR/$PK_DIRNAME/thirdparty/tiff-4.0.3"
