@@ -50,6 +50,72 @@ pkbuild() {
         # Idempotent: the exact "= rout;" pattern no longer matches once patched.
         sed -i 's/TRaster32P rout32 = rout;/TRaster32P rout32 = (TRasterP)rout;/' \
             "$BUILD_PACKET_DIR/$PK_DIRNAME/toonz/sources/common/trop/tresample.cpp" || return 1
+        
+        # Fix duplicate explicit template instantiation in tnotanimatableparam.h
+        # Keep the first occurrence and drop any later duplicates in a
+        # line-content-based way (avoid brittle fixed line numbers).
+        local _tna_file="$BUILD_PACKET_DIR/$PK_DIRNAME/toonz/sources/include/tnotanimatableparam.h"
+        awk 'BEGIN{n=0} {
+            if ($0 == "template class DVAPI TNotAnimatableParam<std::wstring>;") {
+                n++
+                if (n > 1) next
+            }
+            print
+        }' "$_tna_file" > "$_tna_file.tmp" || return 1
+        mv "$_tna_file.tmp" "$_tna_file" || return 1
+
+        # tnzext links the static Fortran BLAS (libblas.a) pulled in by SuperLU.
+        # Those objects need the gfortran runtime (_gfortran_*) and libm. Append
+        # the plain library names 'gfortran m' (CMake turns them into -lgfortran
+        # -lm; using a leading dash here would make CMake treat them as missing
+        # file targets and fail with "No rule to make target '-lgfortran'").
+        # Idempotent: only matches the line that does not already contain gfortran.
+        sed -i 's/\(\${SUPERLU_LIB} \${OPENBLAS_LIB}\) \(\${EXTRA_LIBS}\)/\1 gfortran m \2/' \
+            "$BUILD_PACKET_DIR/$PK_DIRNAME/toonz/sources/tnzext/CMakeLists.txt" || return 1
+
+        # toonzqt compiles ../tnztools/cursormanager.cpp into its own DLL (to
+        # avoid a circular toonzqt<->tnztools dependency). On Windows the
+        # cursormanager.h declarations use DV_IMPORT_API unless TNZTOOLS_EXPORTS
+        # is defined, so toonzqt's own callers (schematicviewer.cpp) reference
+        # __imp_setToolCursor which does not exist (the function is defined
+        # locally, not imported) -> "undefined reference to
+        # __imp__Z13setToolCursorP7QWidgeti". Define TNZTOOLS_EXPORTS for the
+        # toonzqt target so setToolCursor/getToolCursor are treated as exported
+        # (local) symbols. toonzqt only pulls cursormanager.h/cursors.h from
+        # tnztools, so this does not affect any genuinely-imported symbols.
+        sed -i 's/    -DTOONZQT_EXPORTS/    -DTOONZQT_EXPORTS\n    -DTNZTOOLS_EXPORTS/' \
+            "$BUILD_PACKET_DIR/$PK_DIRNAME/toonz/sources/toonzqt/CMakeLists.txt" || return 1
+
+        # The MinGW sysroot only ships a lowercase "windows.h"; a couple of
+        # sources (stopmotion/webcam.cpp, toonz/penciltestpopup.cpp) include
+        # <Windows.h> with a capital W, which fails on the case-sensitive Linux
+        # build host ("fatal error: Windows.h: No such file or directory").
+        # Lowercase the include so it resolves. (On real Windows the filesystem
+        # is case-insensitive, so this is a no-op there.)
+        grep -rlZ '#include <Windows.h>' "$BUILD_PACKET_DIR/$PK_DIRNAME/toonz/sources" 2>/dev/null \
+            | xargs -0 -r sed -i 's/#include <Windows.h>/#include <windows.h>/' || return 1
+
+        # stopmotion/webcam.cpp and toonz/penciltestpopup.cpp call the Media
+        # Foundation device-enumeration function MFEnumDeviceSources, which
+        # MinGW-w64's mfidl.h does not declare -> "not declared in this scope".
+        # The symbol IS exported by mf.dll (present in libmf.a). Insert the
+        # prototype after the #include <mfidl.h> line in every file that uses it.
+        # Idempotent: grep check prevents double-insertion.
+        for _f in $(grep -rlZ '<mfidl.h>' "$BUILD_PACKET_DIR/$PK_DIRNAME/toonz/sources" 2>/dev/null | tr '\0' ' '); do
+            if ! grep -q 'MFEnumDeviceSources(IMFAttributes' "$_f"; then
+                sed -i '/#include <mfidl.h>/a extern "C" HRESULT __stdcall MFEnumDeviceSources(IMFAttributes *pAttributes, IMFActivate ***pppSourceActivate, UINT32 *pcSourceActivate);' \
+                    "$_f" || return 1
+            fi
+        done
+
+        # The OpenToonz target links the Media Foundation libs only through MSVC
+        # "#pragma comment(lib, ...)" directives in webcam.cpp, which GCC/MinGW
+        # ignores. The cross build therefore fails to resolve MFEnumDeviceSources,
+        # MFCreateAttributes, MFStartup, etc. Add the corresponding MinGW import
+        # libraries to the OpenToonz link line (next to the existing strmiids).
+        # Idempotent: only matches the line that does not already contain mfplat.
+        sed -i 's/\(Qt5::WinMain -lstrmiids\) \(-mwindows\)/\1 -lmfplat -lmf -lmfreadwrite -lmfuuid \2/' \
+            "$BUILD_PACKET_DIR/$PK_DIRNAME/toonz/sources/toonz/CMakeLists.txt" || return 1
     fi
 
     cd "$BUILD_PACKET_DIR/$PK_DIRNAME/thirdparty/tiff-4.0.3"
@@ -64,15 +130,34 @@ pkbuild() {
     if [ "$PLATFORM" = "linux" ]; then
         LOCAL_CFLAGS=" -fpermissive"
     fi
+    if [ "$PLATFORM" = "win" ]; then
+        # The OpenToonz sources rely on a few implicit downcasts (e.g.
+        # "TVectorImageP vi = img->cloneImage();" where cloneImage() returns
+        # TImage*). GCC rejects these as errors by default; the Linux build
+        # already relaxes them with -fpermissive. The cross (mingw) build needs
+        # the same relaxation, otherwise toonzlib fails with
+        # "invalid conversion from 'TImage*' to 'TVectorImage*'".
+        #
+        # -fcommon: GCC 10 defaults to -fno-common, which turns tentative
+        # definitions in headers (e.g. "double Avl_Dummy[];" in toonz4.6/avl.h,
+        # included by avl.c and tiio_plt.cpp) into multiple-definition link
+        # errors for the "image" library. Restore the pre-GCC10 -fcommon
+        # behaviour so these legacy globals collapse into one definition.
+        LOCAL_CFLAGS=" -fpermissive -fcommon"
+    fi
     
     if ! check_packet_function $NAME build.configure; then
-        if ! CFLAGS="$CFLAGS $LOCAL_CFLAGS" CXXFLAGS="$CXXFLAGS $LOCAL_CFLAGS" cmake \
+        if ! CFLAGS="$CFLAGS $LOCAL_CFLAGS" CXXFLAGS="$CXXFLAGS $LOCAL_CFLAGS" \
+              PKG_CONFIG_PATH="$ENVDEPS_PACKET_DIR/lib/pkgconfig:$PKG_CONFIG_PATH" \
+              cmake \
               -DCMAKE_PREFIX_PATH="$ENVDEPS_PACKET_DIR" \
               -DCMAKE_MODULE_PATH="$ENVDEPS_NATIVE_PACKET_DIR/share/cmake-3.6.2/Modules" \
               -DCMAKE_INSTALL_PREFIX="$INSTALL_PACKET_DIR" \
               -DPNG_PNG_INCLUDE_DIR="$ENVDEPS_PACKET_DIR/include" \
               -DPNG_LIBRARY="$ENVDEPS_PACKET_DIR/lib/$LOCAL_PNG_LIB" \
               -DGLUT_LIB="$ENVDEPS_PACKET_DIR/lib/$LOCAL_GLUT_LIB" \
+              -DSUPERLU_INCLUDE_DIR="$ENVDEPS_PACKET_DIR/include/superlu" \
+              -DSUPERLU_LIBRARY="$ENVDEPS_PACKET_DIR/lib/libsuperlu.a;$ENVDEPS_PACKET_DIR/lib/libblas.a" \
               $LOCAL_CMAKE_OPTIONS \
               $PK_CONFIGURE_OPTIONS \
               ../sources; \
