@@ -5,6 +5,19 @@
 export CROSS_TRIPLE="${TC_HOST}"
 export CROSS_ROOT="/usr/${CROSS_TRIPLE}"
 
+# Set CC, CXX, AR for cross-compilation. Needed for Makefile-based builds.
+export TC_CC="${CROSS_TRIPLE}-gcc"
+export TC_CXX="${CROSS_TRIPLE}-g++"
+export TC_AR="${CROSS_TRIPLE}-ar"
+export TC_RANLIB="${CROSS_TRIPLE}-ranlib"
+# Cross Fortran compiler. Needed so Makefile-based builds (e.g. superlu, blas)
+# produce Windows PE/COFF objects instead of native ELF. Without this, the
+# Fortran/C objects are ELF and the mingw linker silently fails to resolve
+# their symbols (e.g. undefined reference to intMalloc/superlu_malloc).
+export TC_FORTRAN="${CROSS_TRIPLE}-gfortran"
+export TC_FC="${CROSS_TRIPLE}-gfortran"
+export TC_F77="${CROSS_TRIPLE}-gfortran"
+
 #export TC_PATH="${CROSS_ROOT}/bin:$INITIAL_PATH"
 export TC_LD_LIBRARY_PATH="$CROSS_ROOT/lib:$INITIAL_LD_LIBRARY_PATH"
 
