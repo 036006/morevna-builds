@@ -46,24 +46,24 @@ run_nsis() {
     echo ""
     PLATFORM=win ARCH=32 $SCRIPT clean_before_do env zlib-1.2.13 # for NSIS
     $SCRIPT chain update opentoonz-master \
-            chain clean_before_do install_release opentoonz-nsis \
-            chain clean_before_do install_release opentoonz-portable
+            chain clean_before_do install_release opentoonz-master-nsis \
+            chain clean_before_do install_release opentoonz-master-portable
 
     local TEMPLATE=`gen_name_template "OpenToonz" "" "$PLATFORM" "$ARCH" ".exe"`
     "$PUBLISH_DIR/publish.sh" \
         "opentoonz" \
         "$TEMPLATE" \
-        "$PACKET_BUILD_DIR/$PLATFORM-$ARCH/opentoonz-nsis/install_release" \
+        "$PACKET_BUILD_DIR/$PLATFORM-$ARCH/opentoonz-master-nsis/install_release" \
         "*.exe" \
-        "$PACKET_BUILD_DIR/$PLATFORM-$ARCH/opentoonz-nsis/envdeps_release/version-opentoonz-master"
+        "$PACKET_BUILD_DIR/$PLATFORM-$ARCH/opentoonz-master-nsis/envdeps_release/version-opentoonz-master"
 
     local TEMPLATE=`gen_name_template "OpenToonz" "" "$PLATFORM" "$ARCH" ".zip"`
     "$PUBLISH_DIR/publish.sh" \
         "opentoonz" \
         "$TEMPLATE" \
-        "$PACKET_BUILD_DIR/$PLATFORM-$ARCH/opentoonz-portable/install_release" \
+        "$PACKET_BUILD_DIR/$PLATFORM-$ARCH/opentoonz-master-portable/install_release" \
         "*.zip" \
-        "$PACKET_BUILD_DIR/$PLATFORM-$ARCH/opentoonz-portable/envdeps_release/version-opentoonz-master"
+        "$PACKET_BUILD_DIR/$PLATFORM-$ARCH/opentoonz-master-portable/envdeps_release/version-opentoonz-master"
 }
 
 linux64() { run_appimage linux 64; }

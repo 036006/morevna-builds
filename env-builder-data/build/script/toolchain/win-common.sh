@@ -5,6 +5,19 @@
 export CROSS_TRIPLE="${TC_HOST}"
 export CROSS_ROOT="/usr/${CROSS_TRIPLE}"
 
+# Set CC, CXX, AR for cross-compilation. Needed for Makefile-based builds.
+export TC_CC="${CROSS_TRIPLE}-gcc"
+export TC_CXX="${CROSS_TRIPLE}-g++"
+export TC_AR="${CROSS_TRIPLE}-ar"
+export TC_RANLIB="${CROSS_TRIPLE}-ranlib"
+# Cross Fortran compiler. Needed so Makefile-based builds (e.g. superlu, blas)
+# produce Windows PE/COFF objects instead of native ELF. Without this, the
+# Fortran/C objects are ELF and the mingw linker silently fails to resolve
+# their symbols (e.g. undefined reference to intMalloc/superlu_malloc).
+export TC_FORTRAN="${CROSS_TRIPLE}-gfortran"
+export TC_FC="${CROSS_TRIPLE}-gfortran"
+export TC_F77="${CROSS_TRIPLE}-gfortran"
+
 #export TC_PATH="${CROSS_ROOT}/bin:$INITIAL_PATH"
 export TC_LD_LIBRARY_PATH="$CROSS_ROOT/lib:$INITIAL_LD_LIBRARY_PATH"
 
@@ -33,7 +46,11 @@ unset TC_EXTRA_CPP_OPTIONS
 export TC_PKG_CONFIG_PATH=""
 #export TC_PKG_CONFIG_LIBDIR="$CROSS_ROOT/lib"
 #export TC_CMAKE_INCLUDE_PATH="${CROSS_ROOT}/include:$INITIAL_CMAKE_INCLUDE_PATH"
-#export TC_CMAKE_LIBRARY_PATH="${CROSS_ROOT}/lib:$INITIAL_CMAKE_LIBRARY_PATH"
+# Add the mingw sysroot lib dir to CMAKE_LIBRARY_PATH so find_library() can
+# locate the toolchain libraries (opengl32 -> GL_LIB, glu32 -> GLU_LIB,
+# pthread -> PTHREAD_LIBRARY) used by OpenToonz. Without this they resolve to
+# NOTFOUND and cmake configure fails.
+export TC_CMAKE_LIBRARY_PATH="${CROSS_ROOT}/lib:$INITIAL_CMAKE_LIBRARY_PATH"
 
 #export TC_ACLOCAL_PATH="/usr/share/aclocal"
 #if [ ! -z "$INITIAL_ACLOCAL_PATH" ]; then

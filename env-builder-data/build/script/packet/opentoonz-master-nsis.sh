@@ -6,6 +6,57 @@ pkfunc_register_file() {
     local WIN_FILE=$(echo "$FILE" | sed "s|\/|\\\\|g")
     ! [ -L "$FILE" ] || return 0
 
+    # NSIS 3.08 in this environment may segfault on UTF-8 path components.
+    # Skip non-ASCII entries during list generation.
+    if ! printf '%s' "$FILE" | LC_ALL=C grep -Eq '^[ -~]+$'; then
+        echo "skip path (non-ascii): $FILE"
+        return 0
+    fi
+
+    # On case-insensitive Windows filesystems the stray top-level "LICENSE"
+    # file (shipped by one of the dependencies, e.g. OpenCV) collides with the
+    # aggregated third-party "license/" directory. NSIS writes the file first,
+    # then CreateDirectory "$INSTDIR\license" fails because the name is already
+    # taken, and every "license\license-*" write aborts with
+    # "Error opening file for writing". Install the stray file as LICENSE.txt
+    # so both can coexist.
+    if [ "$FILE" = "./LICENSE" ]; then
+        echo "skip case-collision file (install as LICENSE.txt): $FILE"
+        echo "File \"/oname=LICENSE.txt\" \"LICENSE\"" >> "files-install.nsh"
+        echo "Delete \"\$INSTDIR\\LICENSE.txt\""       >> "files-uninstall.nsh"
+        return 0
+    fi
+
+    # NSIS 3.08 crashes while packaging the large stuff/doc payload in this
+    # environment. Skip docs to keep installer generation reliable.
+    if [ "$FILE" = "./share/opentoonz/stuff/doc" ]; then
+        echo "skip doc subtree (nsis instability): $FILE"
+        return 0
+    fi
+
+    # NSIS 3.08 on this build image crashes or misparses when File commands
+    # recurse through non-ASCII path components (e.g. Español, Français).
+    # Package only ASCII-safe locale directory names to keep installer
+    # generation stable.
+    if [ "$FILE" = "./share/opentoonz/stuff/config/loc" ]; then
+        local LOC_SUBDIR=
+        local LOC_NAME=
+        echo "CreateDirectory \"\$STUFFDIR\\config\\loc\"" >> "files-stuff-install.nsh"
+        for LOC_SUBDIR in "$FILE"/*; do
+            [ -d "$LOC_SUBDIR" ] || continue
+            LOC_NAME=$(basename "$LOC_SUBDIR")
+            if printf '%s' "$LOC_NAME" | grep -Eq '^[A-Za-z0-9._ -]+$'; then
+                if ! pkfunc_register_file "$LOC_SUBDIR"; then
+                    return 1
+                fi
+            else
+                echo "skip locale directory (non-ascii): $LOC_NAME"
+            fi
+        done
+        echo "RMDir \"\$STUFFDIR\\config\\loc\"" >> "files-stuff-uninstall.nsh"
+        return 0
+    fi
+
     if [ "${FILE:0:8}" = "./files-" ]; then
         true # skip
     elif [ "${FILE:0:24}" = "./share/opentoonz/stuff/" ]; then
