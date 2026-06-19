@@ -186,17 +186,21 @@ pkinstall() {
     if [ "$PLATFORM" = "win" ]; then
         local TARGET="$INSTALL_PACKET_DIR/bin/"
         
-        local LOCAL_DIR="/usr/local/$HOST/sys-root/$HOST/lib/"
-        cp "$LOCAL_DIR"/libgcc*.dll        "$TARGET" || return 1
-        cp "$LOCAL_DIR"/libstdc*.dll       "$TARGET" || return 1
-        cp "$LOCAL_DIR"/libquadmath*.dll   "$TARGET" || return 1
-        cp "$LOCAL_DIR"/libgfortran*.dll   "$TARGET" || return 1
+        # GCC runtime DLLs — Debian mingw-w64 layout (not the old Fedora
+        # /usr/local/HOST/sys-root layout the original script assumed).
+        local GCC_DIR="/usr/lib/gcc/$HOST/10-posix"
+        cp "$GCC_DIR"/libgcc_s_seh-1.dll   "$TARGET" || return 1
+        cp "$GCC_DIR"/libstdc++-6.dll      "$TARGET" || return 1
+        cp "$GCC_DIR"/libgfortran-5.dll    "$TARGET" || return 1
+        # libquadmath may not be present for all targets; ignore if absent.
+        cp "$GCC_DIR"/libquadmath*.dll     "$TARGET" 2>/dev/null || true
 
-        local LOCAL_DIR="/usr/local/$HOST/sys-root/bin/"
-        cp "$LOCAL_DIR"/libwinpthread*.dll "$TARGET" || return 1
-        cp "$LOCAL_DIR"/libgettextlib*.dll "$TARGET" || return 1
-        cp "$LOCAL_DIR"/libintl*.dll       "$TARGET" || return 1
-        cp "$LOCAL_DIR"/libiconv*.dll      "$TARGET" || return 1
+        local MINGW_DIR="/usr/$HOST"
+        cp "$MINGW_DIR/lib"/libwinpthread-1.dll "$TARGET" || return 1
+        cp "$MINGW_DIR/bin"/libintl-8.dll       "$TARGET" || return 1
+        cp "$MINGW_DIR/bin"/libiconv-2.dll      "$TARGET" || return 1
+        # libgettextlib may not ship as a standalone DLL; ignore if absent.
+        cp "$MINGW_DIR/bin"/libgettextlib*.dll  "$TARGET" 2>/dev/null || true
 
         # add icon
         cp "$BUILD_PACKET_DIR/$PK_DIRNAME/toonz/sources/toonz/toonz.ico" "$TARGET" || return 1
