@@ -17,7 +17,7 @@ pkhook_version() {
     local LOCAL_FILENAME="$PK_DIRNAME/toonz/sources/include/tversion.h"
     LANG=C LC_NUMERIC=C printf "%0.1f.%g\\n" \
       `cat "$LOCAL_FILENAME" | grep applicationVersion -m1 | cut -d "=" -f 2 | cut -d ";" -f 1 | cut -d "f" -f 1` \
-      `cat "$LOCAL_FILENAME" | grep applicationRevision -m1 | cut -d "=" -f 2 | cut -d ";" -f 1` \
+      `cat "$LOCAL_FILENAME" | grep applicationRevision -m1 | cut -d "=" -f 2 | cut -d ";" -f 1 | cut -d "f" -f 1` \
     || return 1
 }
 
