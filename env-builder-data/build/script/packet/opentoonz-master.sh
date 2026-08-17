@@ -188,8 +188,9 @@ pkinstall() {
         
         # GCC runtime DLLs — Debian mingw-w64 layout (not the old Fedora
         # /usr/local/HOST/sys-root layout the original script assumed).
+        # libgcc_s variant differs by arch: i686=dw2, x86_64=seh — use a glob.
         local GCC_DIR="/usr/lib/gcc/$HOST/10-posix"
-        cp "$GCC_DIR"/libgcc_s_seh-1.dll   "$TARGET" || return 1
+        cp "$GCC_DIR"/libgcc_s_*-1.dll     "$TARGET" || return 1
         cp "$GCC_DIR"/libstdc++-6.dll      "$TARGET" || return 1
         cp "$GCC_DIR"/libgfortran-5.dll    "$TARGET" || return 1
         # libquadmath may not be present for all targets; ignore if absent.
