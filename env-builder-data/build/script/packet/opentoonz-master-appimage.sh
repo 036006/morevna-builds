@@ -35,6 +35,14 @@ pkinstall_release() {
 	# https://github.com/morevnaproject-org/opentoonz/issues/39
 	rm -f $APPDIR/usr/lib/libstdc* || return 1
 
+	# libgcc_s is guaranteed present on target systems (it is a dependency of
+	# the system libstdc++, which we already rely on since libstdc++ is not
+	# bundled). The bundled copy comes from the old build image (stretch/gcc6,
+	# max version node GCC_4.8.0) and breaks startup on newer distros whose
+	# system libstdc++ requires GCC_7.0.0 (seen on i386):
+	# "version `GCC_7.0.0' not found (required by /lib/.../libstdc++.so.6)"
+	rm -f $APPDIR/usr/lib/libgcc_s* || return 1
+
 	# fix https://github.com/morevnaproject-org/opentoonz/issues/13
 	# "Could not Initialize GLX on Arch Linux"
 	rm -f $APPDIR/usr/lib/libxcb-dri3* || return 1
